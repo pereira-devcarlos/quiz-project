@@ -1,7 +1,7 @@
-#include <iostream>  // E/S básica
-#include <fstream>   // Leitura e escrita de arquivos
-#include <ctime>     // Para srand e time
-#include <string>    // Para usar string
+#include <iostream>
+#include <fstream>
+#include <ctime>
+#include <string>
 #include <limits>
 
 using namespace std;
@@ -11,49 +11,46 @@ struct jogador{
     int pontos;
 };
 
+// Função para ler jogadores do arquivo
+int lerJogadores(ifstream& arquivoJ, jogador player[], int maxPlayers) {
+    int quantPlayers = 0;
+    string pontoString;
+    while (quantPlayers < maxPlayers && getline(arquivoJ, player[quantPlayers].name)) {
+        if (!getline(arquivoJ, pontoString)) break;
+        player[quantPlayers].pontos = stoi(pontoString);
+        quantPlayers++;
+    }
+    return quantPlayers;
+}
 
 int main(){
-    const int TAM=10; // Constante para definir os tamanhos dos vetores
-    int menu;
-    
-    //Definindo a entrada das perguntas de um arquivo texto
+    const int TAM=10;
+    int menu = 2, quantPlayers = 0;
+
+    // Abrir arquivos
     ifstream arquivoP("perguntas.txt");
     ifstream arquivoJ("jogadores.txt");
-    //Coletar os dados dos jogadores em arquivo externo
-    ofstream arquivoE("jogadores.txt", ios::app); // ios::app para que não apague o que já estava escrito
-    if(!arquivoP.is_open() && !arquivoE.is_open() && !arquivoJ.is_open()){
+    if (!arquivoP.is_open() || !arquivoJ.is_open()) {
         cout << "Erro: algum dos arquivos nao foi aberto corretamente!" << endl;
         return 1;
     }
 
-    //Declarar os jogadores
-    jogador player[10];
-
-    player[0].pontos=0;
-    
-    //Declaração dos vetores
+    jogador player[50];
     string perguntas[TAM];
     string opcoes[TAM][4];
     string correta[TAM];
     string resposta[TAM];
 
-    cout << "Digite seu nome: ";
-    getline(cin, player[0].name);
-    // Remove espaços do início e fim (opcional, mas recomendado)
-    while (player[0].name.empty() || player[0].name.find_first_not_of(' ') == string::npos) {
-        cout << "Nome inválido! Digite seu nome: ";
-        getline(cin, player[0].name);
-    }
+    // Lê jogadores existentes no início
+    quantPlayers = lerJogadores(arquivoJ, player, 50);
+    arquivoJ.close(); // Fecha para evitar conflito com escrita
 
-    menu = 2; // Valor para iniciar a repetição
     while (menu != 3) {
-        // Menu Inicial
         cout << "\n\tQuiz de Programacao" << endl;
         cout << "[1] Jogar" << endl << "[2] Ranking" << endl << "[3] Sair" << endl;
         cout << "Digite a opcao que voce deseja: ";
         cin >> menu;
 
-        // Validar a escolha das opcoes
         while (menu < 1 || menu > 3) {
             cout << "\nErro: opcao invalida!!!" << endl;
             cout << "Digite a opcao que voce deseja: ";
@@ -61,12 +58,25 @@ int main(){
         }
 
         switch (menu) {
-            case 1:
-                // Coletando os dados
+            case 1: {
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout << "Digite seu nome: ";
+                getline(cin, player[quantPlayers].name);
+                while (player[quantPlayers].name.empty() || player[quantPlayers].name.find_first_not_of(' ') == string::npos) {
+                    cout << "Nome inválido! Digite seu nome: ";
+                    getline(cin, player[quantPlayers].name);
+                }
+                player[quantPlayers].pontos = 0;
+
+                // Reposiciona ponteiro do arquivo de perguntas
+                arquivoP.clear();
+                arquivoP.seekg(0);
+
+                // Coletando os dados das perguntas
                 for (int i = 0; i < TAM; i++) {
-                    getline(arquivoP, perguntas[i]);     // Dados das perguntas
+                    getline(arquivoP, perguntas[i]);
                     for (int j = 0; j < 4; j++) {
-                        getline(arquivoP, opcoes[i][j]); // Dados das alternativas
+                        getline(arquivoP, opcoes[i][j]);
                     }
                     getline(arquivoP, correta[i]);
                 }
@@ -81,44 +91,39 @@ int main(){
                     cin >> resposta[i];
                     resposta[i][0] = toupper(resposta[i][0]);
                     if (resposta[i] == correta[i]) {
-                        player[0].pontos+=10;
+                        player[quantPlayers].pontos += 10;
                     }
                     cin.ignore(numeric_limits<streamsize>::max(), '\n');
                 }
-                cout << player[0].name << " obteve " << player[0].pontos << endl;
-                arquivoE << player[0].name << endl;
-                arquivoE << player[0].pontos << endl;
-                break;
+                cout << player[quantPlayers].name << " obteve " << player[quantPlayers].pontos << endl;
 
-            case 2:
-                // Reabrir o arquivo para garantir leitura correta
-                arquivoJ.close();
-                arquivoJ.open("jogadores.txt");
-                if (!arquivoJ.is_open()) {
+                // Salva novo jogador no arquivo
+                ofstream arquivoE("jogadores.txt", ios::app);
+                if (arquivoE.is_open()) {
+                    arquivoE << player[quantPlayers].name << endl;
+                    arquivoE << player[quantPlayers].pontos << endl;
+                    arquivoE.close();
+                } else {
+                    cout << "Erro ao salvar jogador!" << endl;
+                }
+                quantPlayers++; // Adiciona novo jogador ao vetor
+                break;
+            }
+            case 2: {
+                // Reabre arquivo para garantir leitura atualizada
+                ifstream arquivoJr("jogadores.txt");
+                if (!arquivoJr.is_open()) {
                     cout << "Erro ao abrir jogadores.txt para leitura do ranking!" << endl;
                     break;
                 }
-
-                // Leitura dos dados dos jogadores
-                for (int i = 0; i < 5; i++){
-                    getline(arquivoJ, player[i].name);
-                    string pontoString;
-                    getline(arquivoJ, pontoString);       // Lendo os pontos como string
-                    player[i].pontos = stoi(pontoString); // converte string para int
-                    cout << player[i].name << " tem " << player[i].pontos << endl;
-                }
+                quantPlayers = lerJogadores(arquivoJr, player, 50);
+                arquivoJr.close();
 
                 // Ordenar o vetor para que fique do maior para o menor
-                for (int i = 0; i < 4; i++){
-                    for (int k=0 ,j=0; j < 4 - i -1 ; j++){
-                        string temp;
-                        if (player[j].pontos< player[j+1].pontos){
-                            k = player[j].pontos;
-                            temp = player[j].name;
-                            player[j].pontos = player[j+1].pontos;
-                            player[j].name = player[j+1].name;
-                            player[j+1].pontos = k;
-                            player[j+1].name = temp;                          
+                for (int i = 0; i < quantPlayers-1; i++){
+                    for (int j = 0; j < quantPlayers-i-1; j++){
+                        if (player[j].pontos < player[j+1].pontos){
+                            swap(player[j], player[j+1]);
                         }
                     }
                 }
@@ -126,22 +131,23 @@ int main(){
                 // Exibir Ranking
                 cout << "\n     Ranking Quiz C++" << endl;
                 cout << "\n==========================" << endl;
-                for (int i = 0; i < 3; i++){
+                for (int i = 0; i < 3 && i < quantPlayers; i++){
                     cout << "\t" << i+1 << " Lugar" << endl;
                     cout << "   " << player[i].name << " " << player[i].pontos << "pts" << endl;
                     cout << "==========================" << endl;
-                }    
+                }
 
                 cout << "\nDeseja continuar no jogo [1]-Sim ou [2]-Nao: ";
-                cin >> menu;
-                if (menu == 2) {
+                int op;
+                cin >> op;
+                if (op == 2) {
                     menu = 3;
                     cout << "\nObrigado por acessar meu jogo, volte sempre!!!" << endl;
                 }
                 break;
-
+            }
             case 3:
-                cout << "\nVolte sempre, basta executar o jogo novamente!";
+                cout << "\nVolte sempre, basta executar o jogo novamente!" << endl;
                 break;
         }
     }
