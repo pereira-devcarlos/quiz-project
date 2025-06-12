@@ -3,7 +3,7 @@
 
 <div align="center">
   <img src="https://img.shields.io/badge/Linguagem-C%2B%2B-blue?style=for-the-badge&logo=c%2B%2B" />
-  <img src="https://img.shields.io/badge/Tópicos-Vetores%2C%20Condicionais%2C%20Loops-orange?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/Tópicos-Vetores%2C%20Condicionais%2C%20Loops%2C%20Registros-orange?style=for-the-badge" />
 </div>
 
 ## 🎯 Objetivo  
